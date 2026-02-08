@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>XOR Neuronales Netz - Facharbeit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body class="bg-gray-100 min-h-screen p-6">
+    <div class="max-w-4xl mx-auto px-2">
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-3xl font-bold text-center text-gray-800 mb-8 border-b pb-4">
+          XOR Neuronales Netz Training
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 text-sm">
+          <div>
+            <label class="block font-medium text-gray-700 mb-0.5 text-xs">
+                Iterationen
+            </label>
+            <input
+              type="number"
+              id="epochs"
+              class="w-full border border-gray-300 rounded p-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              value="10000"
+              step="100"
+            />
+          </div>
+          <div>
+            <label class="block font-medium text-gray-700 mb-0.5 text-xs">
+              Aktivierung
+            </label>
+            <select id="activation" class="w-full border border-gray-300 rounded p-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm">
+              <option value="sigmoid">Sigmoid</option>
+              <option value="tanh">Tanh</option>
+              <option value="relu">ReLU</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium text-gray-700 mb-0.5 text-xs">
+              Lernrate
+            </label>
+            <input
+              type="number"
+              id="learningRate"
+              class="w-full border border-gray-300 rounded p-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              value="0.5"
+              step="0.1"
+            />
+          </div>
+          <div>
+            <label class="block font-medium text-gray-700 mb-0.5 text-xs">
+              Hidden Layers
+            </label>
+            <input
+              type="number"
+              id="hiddenLayers"
+              class="w-full border border-gray-300 rounded p-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              value="1"
+              min="1"
+              max="3"
+            />
+          </div>
+          <div>
+            <label class="block font-medium text-gray-700 mb-0.5 text-xs">
+              Neuronen / Layer
+            </label>
+            <input
+              type="number"
+              id="neurons"
+              class="w-full border border-gray-300 rounded p-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              value="2"
+              min="1"
+            />
+          </div>
+          <div>
+            <label class="block font-medium text-gray-700 mb-0.5 text-xs">
+              Vorzeichen
+            </label>
+            <select id="initMode" class="w-full border border-gray-300 rounded p-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm">
+              <option value="symmetric" selected>Symmetrisch (±)</option>
+              <option value="positive">Nur Positiv (+)</option>
+              <option value="negative">Nur Negativ (-)</option>
+            </select>
+          </div>
+          <div class="md:col-span-3">
+            <label class="block font-medium text-gray-700 mb-0.5 text-xs">
+              Max. Betrag (x)
+            </label>
+            <select id="initRange" class="w-full border border-gray-300 rounded p-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm" >
+              <option value="0.01">x = 0.01</option>
+              <option value="0.1">x = 0.1</option>
+              <option value="0.5" selected>x = 0.5</option>
+              <option value="1.0">x = 1.0</option>
+              <option value="5.0">x = 5.0</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mb-4 p-4 border border-gray-200 bg-gray-50 rounded-lg">
+          <h5 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+            Schnell-Konfiguration
+          </h5>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <button
+              onclick="applyPreset('sigmoid', 500, 10, 1, 2, 'symmetric', '0.5')"
+              class="text-xs bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 py-2 px-3 rounded"
+            >
+              Sigmoid
+            </button>
+            <button
+              onclick="applyPreset('tanh', 500, 0.25, 1, 2, 'symmetric', '0.5')"
+              class="text-xs bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 py-2 px-3 rounded"
+            >
+              Tanh
+            </button>
+            <button
+              onclick="applyPreset('relu', 250, 0.1, 1, 2, 'positive', '1.0')"
+              class="text-xs bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 py-2 px-3 rounded"
+            >
+              ReLU
+            </button>
+          </div>
+          <p class="text-[12px] text-gray-700 mt-2 italic">
+            * Lädt Parameter mit denen ich die besten Ergebnisse erzielt habe (häufig werden mehrer Trainigsdurchlkäufe benötigt, da die Initialisierung zufällig ist und die Trainigswerte die Funktionen an ihre Grenzen bringen können)
+          </p>
+        </div>
+
+        <div class="text-center mb-10">
+          <button
+            id="trainBtn"
+            onclick="trainNetwork()"
+            class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-lg transition-colors"
+          >
+            Start
+          </button>
+        </div>
+
+        <div class="mb-8">
+          <div class="space-y-4">
+            <h5 class="text-lg font-semibold text-gray-700 flex items-center">
+              Vorhersagen & Ergebnisse
+            </h5>
+            <div
+              id="predictions"
+              class="prediction-box border border-gray-200 bg-gray-50 p-5 text-gray-700 rounded-lg text-sm min-h-[165px]"
+            >
+              <div class="space-y-1 mb-4">
+                <div class="flex justify-between border-b border-gray-100 py-1">
+                  <span>0 XOR 0</span
+                  ><span class="text-gray-700">0.00000</span>
+                </div>
+                <div class="flex justify-between border-b border-gray-100 py-1">
+                  <span>0 XOR 1</span
+                  ><span class="text-gray-700">0.00000</span>
+                </div>
+                <div class="flex justify-between border-b border-gray-100 py-1">
+                  <span>1 XOR 0</span
+                  ><span class="text-gray-700">0.00000</span>
+                </div>
+                <div class="flex justify-between py-1">
+                  <span>1 XOR 1</span
+                  ><span class="text-gray-700">0.00000</span>
+                </div>
+              </div>
+              <div class="pt-3 border-t border-gray-200 flex justify-between items-center">
+                <span class="text-gray-700">
+                  Endgültiger Loss
+                </span>
+                <span class="text-gray-700">0.000000</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div class="space-y-4">
+            <h5 class="text-lg font-semibold text-gray-700 flex items-center">
+              Lernfortschritt (Loss)
+            </h5>
+            <div
+              class="bg-gray-50 p-4 rounded-lg border border-gray-200 aspect-square flex items-center"
+            >
+              <canvas id="lossChart"></canvas>
+            </div>
+          </div>
+          <div class="space-y-4">
+            <h5 class="text-lg font-semibold text-gray-700 flex items-center">
+              Entscheidungsgrenze
+            </h5>
+            <div
+              class="bg-gray-50 p-4 rounded-lg border border-gray-200 relative aspect-square flex items-center"
+            >
+              <canvas id="decisionChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let myChart;
+      let decisionChart;
+
+      function trainNetwork() {
+        // Startbutton holen, deaktivieren und Status anzeigen
+        const btn = document.getElementById("trainBtn");
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = "Training läuft...";
+
+        // Alle Parameter aus den Inputferldern sammeln
+        const activation = document.getElementById("activation").value;
+        const learningRate = document.getElementById("learningRate").value;
+        const epochs = document.getElementById("epochs").value;
+        const hiddenLayers = document.getElementById("hiddenLayers").value;
+        const neurons = document.getElementById("neurons").value;
+        const initRange = document.getElementById("initRange").value;
+        const initMode = document.getElementById("initMode").value;
+
+        // API-Request mit den Parametern an das Flask-Backend um das Traning zu starten
+        fetch("/train", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            activation: activation,
+            learning_rate: learningRate,
+            epochs: epochs,
+            hidden_layers: hiddenLayers,
+            neurons: neurons,
+            init_range: initRange,
+            init_mode: initMode,
+          }),
+        })
+        .then((response) => response.json()) // Response als JSON parsen
+        .then((data) => { // Daten aus der Response verarbeiten
+          // Fehlerbehandlung, wenn das Bakcend falsche Daten zurück gibt
+          if (data.error) {
+            document.getElementById("predictions").innerHTML = `<span class='text-gray-700'>Fehler: ${data.error}</span>`;
+            return;
+          }
+          // Wenn kein Fehler auftritt, dann die Grafiken updaten, mit den Daten aus dem Backend
+          updateLossChart(data.loss_history);
+          updateDecisionChart(data.decision_boundary);
+          displayPredictions(data.predictions, data.final_loss);
+        })
+        .catch((error) => { // Falls beim API-Request oder der Datenverarbeitung ein Fehler auftritt, diesen abfangen und anzeigen
+          document.getElementById("predictions").innerHTML = "<span class='text-gray-700'>Fehler beim Training</span>";
+        }).finally(() => { // Unabhängig davon ob ein Fehler auftritt oder nicht, den Startbutton wieder aktivieren und den ursprünglichen Text anzeigen
+          btn.disabled = false;
+          btn.innerText = originalText;
+        });
+      }
+
+      function updateLossChart(history) {
+        // Erzeuge X-/Y-Daten aus dem übergebenen Array
+        const labels = history.map((h) => h.epoch);
+        const values = history.map((h) => h.loss);
+
+        // Bereits existierenden Chart entfernen
+        if (myChart) {
+          myChart.destroy();
+        }
+
+        // Chart-Context holen
+        const ctx = document.getElementById("lossChart").getContext("2d");
+        // Neuen Chart erstellen
+        myChart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                // Beschriftung und Darstellung des Charts, wie Farbe, etc.
+                label: "Verlust (Loss)",
+                data: values,
+                borderColor: "#2563eb",
+                backgroundColor: "rgba(37, 99, 235, 0.1)",
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.3,
+                fill: true,
+              },
+            ],
+          },
+          options: {
+            // Optionen für die Dartsellung des Charts, wie deaktivierte Ainimationen, responsive Design, etc.
+            animation: false,
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 1,
+            plugins: {
+              legend: { display: false },
+            },
+            scales: {
+              // Y-Achse beginnt bei 0, Gitter leicht sichtbar
+              y: {
+                beginAtZero: true,
+                grid: { color: "rgba(0,0,0,0.05)" },
+              },
+              // X-Achse ohne Gitterlinien für geileren Look
+              x: {
+                grid: { display: false}
+              },
+            },
+          },
+        });
+      }
+
+      function updateDecisionChart(boundaryData) {
+        // Chart-Context holen
+        const ctx = document.getElementById("decisionChart").getContext("2d");
+
+        // Vorherigen Chart entfernen
+        if (decisionChart) {
+          decisionChart.destroy();
+        }
+
+        // Heatmap-Punkte vorbereiten (Hintergrund-Feld der Entscheidungsgrenze)
+        const heatmapPoints = boundaryData.map((p) => ({ x: p.x, y: p.y, v: p.v }));
+
+        // Die vier XOR-Punkte als Orientierung sezten
+        const markers = [
+          { x: 0, y: 0, label: "0", val: 0 },
+          { x: 0, y: 1, label: "1", val: 1 },
+          { x: 1, y: 0, label: "1", val: 1 },
+          { x: 1, y: 1, label: "0", val: 0 },
+        ];
+
+        // Neuen Chart erstellen
+        decisionChart = new Chart(ctx, {
+          type: "scatter",
+          data: {
+            datasets: [
+              {
+                // XOR-Trainingspunkte
+                label: "Punkte",
+                data: markers,
+                pointStyle: "circle",
+                pointRadius: 8,
+                pointHoverRadius: 10,
+                pointBackgroundColor: (ctx) => {
+                  const val = ctx.raw ? ctx.raw.val : 0;
+                  return val > 0.5 ? "#ffffff" : "#000000";
+                },
+                pointBorderColor: "#000000",
+                pointBorderWidth: 2,
+                zIndex: 10,
+              },
+              {
+                // Hintergrundfläche mit entsprechenden Farben, die die Modell-Ausgabe anzeigt
+                label: "Fläche",
+                data: heatmapPoints,
+                pointStyle: "rect",
+                pointRadius: 7,
+                pointBackgroundColor: (ctx) => {
+                  const v = ctx.raw ? ctx.raw.v : 0;
+                  const r = Math.floor(v * 255);
+                  const b = Math.floor((1 - v) * 200);
+                  return `rgba(${r}, 100, ${b}, 0.6)`;
+                },
+                pointBorderWidth: 0,
+                zIndex: 1,
+              },
+            ],
+          },
+          options: {
+            // Optionen für die Dartsellung des Charts, wie deaktivierte Ainimationen, responsive Design, etc.
+            animation: false,
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 1,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  // Tooltip zeigt Koordinaten und entsprechenden Output
+                  label: (ctx) =>
+                    `X: ${ctx.raw.x.toFixed(2)}, Y: ${ctx.raw.y.toFixed(2)}, Output: ${ctx.raw.v ? ctx.raw.v.toFixed(3) : ctx.raw.val}`,
+                },
+              },
+            },
+            scales: { // Größe festlegen
+              // Bereich leicht vergrößern, damit Punkte nicht am Rand überstehen
+              x: { min: -0.2, max: 1.2, grid: { color: "rgba(0,0,0,0.1)" } },
+              y: { min: -0.2, max: 1.2, grid: { color: "rgba(0,0,0,0.1)" } },
+            },
+          },
+        });
+      }
+
+      function displayPredictions(preds, finalLoss) {
+        // XOR-Inputs
+        const inputs = [[0, 0], [0, 1], [1, 0], [1, 1]];
+
+        // HTML-Aufbau: Zeile pro Input mit Output
+        let html = "<div class='space-y-1 mb-4'>";
+        inputs.forEach((inp, i) => {
+          const val = preds[i];
+          html += `<div class='flex justify-between border-b border-gray-100 py-1 last:border-0'>
+                    <span>${inp[0]} XOR ${inp[1]}</span>
+                    <span class='text-gray-700'>${val.toFixed(5)}</span>
+                 </div>`;
+        });
+        html += "</div>";
+
+        // Endgültiger Loss anzeigen oder Fehler-Nachricht
+        if (finalLoss !== null && !isNaN(finalLoss)) {
+          html += `<div class='pt-3 border-t border-gray-200 flex justify-between items-center'>
+                    <span class='text-gray-700'>Endgültiger Loss</span>
+                    <span class='text-gray-700'>${finalLoss.toFixed(6)}</span>
+                 </div>`;
+        } else {
+          html += `<div class='pt-3 border-t border-gray-200 text-gray-700'>
+                    Loss: Instabil (NaN)
+                 </div>`;
+        }
+
+        // Ergebnis-Container ersetzen mit neuen Werten
+        document.getElementById("predictions").innerHTML = html;
+      }
+
+      // Presets von mir festgelegt, für einfachen Start
+      function applyPreset(
+        activation,
+        epochs,
+        lr,
+        layers,
+        neurons,
+        initMode,
+        initRange,
+      ) {
+        // Werte in die Eingabefelder schreiben (Preset anwenden)
+        document.getElementById("activation").value = activation;
+        document.getElementById("epochs").value = epochs;
+        document.getElementById("learningRate").value = lr;
+        document.getElementById("hiddenLayers").value = layers;
+        document.getElementById("neurons").value = neurons;
+        document.getElementById("initMode").value = initMode;
+        document.getElementById("initRange").value = initRange;
+      }
+
+      // Initialisierung von Standardwerten beim Laden der Seite
+      window.addEventListener("DOMContentLoaded", () => {
+        // Platzhalter für Loss Chart
+        updateLossChart([{ epoch: 0, loss: 0 }]);
+        // Platzhalter für Entscheidungsgrenze
+        updateDecisionChart([]);
+      });
+    </script>
+  </body>
+</html>
