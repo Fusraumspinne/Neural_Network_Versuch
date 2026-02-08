@@ -1,0 +1,3 @@
+Flask
+gunicorn
+# Füge hier weitere Abhängigkeiten hinzu oder ersetze durch `pip freeze > requirements.txt` nach lokalen Tests
