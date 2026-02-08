@@ -1,0 +1,9 @@
+services:
+  - type: web_service
+    name: neural-network-versuch
+    env: python
+    region: oregon
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    plan: free
